@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <!-- Favicon -->
+  <link rel="icon" href="batch_process.png" type="image/png"/>
+  <link rel="shortcut icon" href="batch_process.png" type="image/png"/>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+  <!-- Optional JavaScript -->
+  <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.3.1.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+  <title>Batch Botqueue</title>
+  <!-- Style Overrides -->
+  <style>
+    .form-check-input {
+      position: relative !important;
+      margin-top: 0rem !important;
+      margin-left: 0.3rem !important;
+      margin-right: 0.5rem !important;
+      width: 20px !important;
+      height: 20px !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-lg navbar-light alert-primary">
+    <div class="container">
+      <span class="navbar-brand" href="#"><img class="mr-1" src="batch_process.png" width="30" height="30" alt=""> Batch Botqueue</span>
+    </div>
+  </nav>
+
+  <section class="p-3">
+    Quick Tips:
+    <ul>
+      <li>CTRL + W closes current tab.</li>
+      <ul>
+        <li>When clearing queues, this can be useful to quickly close tabs as you clear pods.</li>
+        <li>Note: CTRL + Left Click will open links in a new tab.</li>
+      </ul>
+    </ul>
+  </section>
+
+  <div class="container-fluid">
+    <div class="p-2">
+      <button class="btn btn-outline-primary m-1 m-1 batch-action" id="batch-return" data-toggle="tooltip" data-placement="bottom" title='Returns the browser to Botqueue'>
+        Return To Botqueue
+      </button>
+      <button class="btn btn-outline-success m-1 m-1 batch-action" id="batch-online" data-toggle="tooltip" data-placement="bottom" title='Sets All Printers Online, ReQueueing Jobs in the process if printers were printing.'>
+        Set All Online
+      </button>
+      <button class="btn btn-outline-success m-1 m-1 batch-action" id="batch-resend" data-toggle="tooltip" data-placement="bottom" title='Resends current jobs on machines.'>
+        Resend Jobs
+      </button>
+      <button class="btn btn-outline-dark m-1 m-1 batch-action" id="batch-offline" data-toggle="tooltip" data-placement="bottom" title='Sets All Printers Offline, this does not clear queues.'>
+        Set All Offline
+      </button>
+      <button class="btn btn-outline-warning m-1 m-1 batch-action" id="batch-quit" data-toggle="tooltip" data-placement="bottom" title='Sets All Printers Offline and clears the queues of the selected bots. This opens Botqueue -> Clear Queue Page'>
+        Quit Jobs
+      </button>
+      <button class="btn btn-outline-danger m-1 m-1 batch-action" id="batch-clear" data-toggle="tooltip" data-placement="bottom" title='Only clears the queues of the selected bots or pods.'>
+        Clear Selected Queues
+      </button>
+    </div>
+    <table class="table table-striped table-bordered">
+      <thead>
+        <tr class="table-primary">
+          <td colspan=12>
+            <input type="checkbox" class="form-check-input" id="cluster-controller"> Aleph Cluster
+          </td>
+        </tr>
+      </thead>
+      <tbody class="">
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    /*
+    There's a lot of arbitrary variables and redundant code that can be put into functions.
+    It needs cleaned up, but this is just the first draft after all.    
+    */
+    var bots=[{id:"9",name:"A1"},{id:"11",name:"A2"},{id:"12",name:"A3"},{id:"13",name:"A4"},{id:"14",name:"A5"},{id:"15",name:"A6"},{id:"16",name:"A7"},{id:"17",name:"A8"},{id:"18",name:"A9"},{id:"19",name:"B01"},{id:"20",name:"B02"},{id:"21",name:"B03"},{id:"22",name:"B04"},{id:"181",name:"B05"},{id:"178",name:"B06"},{id:"25",name:"B07"},{id:"26",name:"B08"},{id:"27",name:"B09"},{id:"152",name:"B10"},{id:"153",name:"B11"},{id:"28",name:"C01"},{id:"29",name:"C02"},{id:"30",name:"C03"},{id:"31",name:"C04"},{id:"32",name:"C05"},{id:"33",name:"C06"},{id:"34",name:"C07"},{id:"35",name:"C08"},{id:"36",name:"C09"},{id:"169",name:"C10"},{id:"170",name:"C11"},{id:"79",name:"D01"},{id:"80",name:"D02"},{id:"81",name:"D03"},{id:"82",name:"D04"},{id:"83",name:"D05"},{id:"174",name:"D06"},{id:"85",name:"D07"},{id:"86",name:"D08"},{id:"87",name:"D09"},{id:"154",name:"D10"},{id:"155",name:"D11"},{id:"116",name:"E01"},{id:"118",name:"E02"},{id:"120",name:"E03"},{id:"122",name:"E04"},{id:"124",name:"E05"},{id:"127",name:"E06"},{id:"182",name:"E07"},{id:"130",name:"E08"},{id:"131",name:"E09"},{id:"156",name:"E10"},{id:"157",name:"E11"},{id:"1",name:"F01"},{id:"2",name:"F02"},{id:"3",name:"F03"},{id:"4",name:"F04"},{id:"5",name:"F05"},{id:"6",name:"F06"},{id:"7",name:"F07"},{id:"8",name:"F08"},{id:"10",name:"F09"},{id:"158",name:"F10"},{id:"159",name:"F11"},{id:"73",name:"G01"},{id:"75",name:"G02"},{id:"173",name:"G03"},{id:"88",name:"G04"},{id:"89",name:"G05"},{id:"90",name:"G06"},{id:"91",name:"G07"},{id:"92",name:"G08"},{id:"93",name:"G09"},{id:"160",name:"G10"},{id:"161",name:"G11"},{id:"94",name:"H01"},{id:"176",name:"H02"},{id:"96",name:"H03"},{id:"97",name:"H04"},{id:"98",name:"H05"},{id:"175",name:"H06"},{id:"100",name:"H07"},{id:"101",name:"H08"},{id:"102",name:"H09"},{id:"162",name:"H10"},{id:"166",name:"H11"},{id:"103",name:"I01"},{id:"104",name:"I02"},{id:"105",name:"I03"},{id:"106",name:"I04"},{id:"107",name:"I05"},{id:"108",name:"I06"},{id:"109",name:"I07"},{id:"110",name:"I08"},{id:"111",name:"I09"},{id:"171",name:"I10"},{id:"172",name:"I11"},{id:"112",name:"J01"},{id:"113",name:"J02"},{id:"114",name:"J03"},{id:"115",name:"J04"},{id:"117",name:"J05"},{id:"119",name:"J06"},{id:"121",name:"J07"},{id:"123",name:"J08"},{id:"125",name:"J09"},{id:"164",name:"J10"},{id:"165",name:"J11"},{id:"57",name:"K01"},{id:"58",name:"K02"},{id:"59",name:"K03"},{id:"60",name:"K04"},{id:"61",name:"K05"},{id:"62",name:"K06"},{id:"63",name:"K07"},{id:"64",name:"K08"},{id:"65",name:"K09"},{id:"167",name:"K10"},{id:"168",name:"K11"},{id:"126",name:"L1"},{id:"129",name:"L2"},{id:"132",name:"L3"},{id:"134",name:"L4"},{id:"136",name:"L5"},{id:"138",name:"L6"},{id:"140",name:"L7"},{id:"142",name:"L8"},{id:"145",name:"L9"},{id:"67",name:"M1"},{id:"68",name:"M2"},{id:"69",name:"M3"},{id:"70",name:"M4"},{id:"71",name:"M5"},{id:"72",name:"M6"},{id:"184",name:"M7"},{id:"76",name:"M8"},{id:"78",name:"M9"},{id:"179",name:"N1"},{id:"133",name:"N2"},{id:"135",name:"N3"},{id:"137",name:"N4"},{id:"139",name:"N5"},{id:"141",name:"N6"},{id:"143",name:"N7"},{id:"144",name:"N8"},{id:"146",name:"N9"},{id:"47",name:"O1"},{id:"48",name:"O2"},{id:"49",name:"O3"},{id:"50",name:"O4"},{id:"51",name:"O5"},{id:"52",name:"O6"},{id:"53",name:"O7"},{id:"54",name:"O8"},{id:"55",name:"O9"},{id:"186",name:"T1"},{id:"147",name:"Z5 - Sample_Room"}]
+    var queues=[{id:"5",name:"A"},{id:"10",name:"B"},{id:"9",name:"C"},{id:"11",name:"D"},{id:"12",name:"E"},{id:"2",name:"F"},{id:"13",name:"G"},{id:"14",name:"H"},{id:"16",name:"I"},{id:"15",name:"J"},{id:"17",name:"K"},{id:"18",name:"L"},{id:"19",name:"M"},{id:"20",name:"N"},{id:"25",name:"O"}];
+    var clusterPrefix = "http://aocluster2.alephobjects.com/bot:";
+    var offlineSuffix = "/setstatus/offline";
+    var onlineSuffix = "/setstatus/idle";
+    var queuePrefix = "http://aocluster2.alephobjects.com/queue:";
+    
+    $(document).ready(function() {
+      var pod = "-";
+      var currentRow;
+      for (var i = 0; i < bots.length; i++) {
+        if (bots[i].name.charAt(0) != pod) {
+          pod = bots[i].name.charAt(0);
+          // Remove "Sample Room" from Z1's name. 
+          if (bots[i].name.includes("Sample")) {
+            bots[i].name = "Z1";
+          }
+
+          // Create Header and Row
+          $("tbody").append("<tr id='" + pod + "-pod-row' class='table-light'><td id='" + pod + "-pod-row'><input type='checkbox' class='form-check-input pod-checkbox' id='" + pod + "-pod-controller'>" + pod + " Pod</td><tr>");
+          $("#" + pod + "-pod-controller")
+            .prop("bot", pod)
+            .on("change", function() {
+              if ($(this).prop("checked") == false) {
+                $("#cluster-controller").prop("checked", false);
+              }
+              $("#" + $(this).prop("bot") + "-pod-row > td > .bot-checkbox").prop("checked", $(this).prop("checked"));
+            });
+            
+          // Create Next Column
+          $("#" + pod + "-pod-row")
+            .append("<td><input type='checkbox' class='form-check-input bot-checkbox' id='" + bots[i].id + "-controller'>" + bots[i].name + "</td>");
+          $("#" + bots[i].id + "-controller")
+            .attr("pod", bots[i].name.charAt(0))
+            .attr("bot", bots[i].name)
+            .attr("bot-id", bots[i].id)
+            .on("change", function() {
+              if ($(this).prop("checked") == false) {
+                $("#cluster-controller").prop("checked", false);
+                $("#" + $(this).attr("pod") + "-pod-controller").prop("checked", false);
+              }
+            });
+
+        } else {
+          // Create Next Column
+          $("#" + pod + "-pod-row")
+            .append("<td><input type='checkbox' class='form-check-input bot-checkbox' id='" + bots[i].id + "-controller'>" + bots[i].name + "</td>");
+          $("#" + bots[i].id + "-controller")
+            .attr("pod", bots[i].name.charAt(0))
+            .attr("bot", bots[i].name)
+            .attr("bot-id", bots[i].id)
+            .on("change", function() {
+              if ($(this).prop("checked") == false) {
+                $("#cluster-controller").prop("checked", false);
+                $("#" + $(this).attr("pod") + "-pod-controller").prop("checked", false);
+              }
+
+            });
+        }
+      }
+      
+      
+      // Ticks/Unticks all of the other tickboxes.
+      $("#cluster-controller").on("click", function() {
+        $(".pod-checkbox").prop("checked", $(this).prop("checked"));
+        $(".bot-checkbox").prop("checked", $(this).prop("checked"));
+      });
+
+	  // Just puts selected machines into an offline state.
+      $("#batch-offline").on("click", function() {
+        $(".batch-action").attr("disabled", true);
+        setTimeout(function() {
+          $(".batch-action").attr("disabled", false);
+        }, 2000);
+        var checkedVals = $('.bot-checkbox:checked').map(function() {
+          return $(this).attr("bot-id");
+        }).get();
+        for (var i = 0; i < checkedVals.length; i++) {
+          window.open(clusterPrefix + checkedVals[i] + offlineSuffix, '_blank').close();
+        }
+      });
+
+	  // Redirects to aocluster2.alephobjects.com
+      $("#batch-return").on("click", function() {
+        window.open("http://aocluster2.alephobjects.com", '_self');
+      });
+
+	  // Just puts the machines into the idle state.
+      $("#batch-online").on("click", function() {
+        $(".batch-action").attr("disabled", true);
+        setTimeout(function() {
+          $(".batch-action").attr("disabled", false);
+        }, 2000);
+        var checkedVals = $('.bot-checkbox:checked').map(function() {
+          return $(this).attr("bot-id");
+        }).get();
+        $(".batch-action").attr("disabled", true);
+        setTimeout(function() {
+          $(".batch-action").attr("disabled", false);
+        }, 2000);
+        //console.log(checkedVals);
+        for (var i = 0; i < checkedVals.length; i++) {
+          window.open(clusterPrefix + checkedVals[i] + onlineSuffix, '_blank').close();
+        }
+      });
+
+	  // Puts selected machines into an idle state, letting the jobs go back to the queue,
+	  // then those machines will pick the job up again.
+      $("#batch-resend").on("click", function() {
+        var checkedVals = $('.bot-checkbox:checked').map(function() {
+          return $(this).attr("bot-id");
+        }).get();
+        //console.log(checkedVals);
+        for (var i = 0; i < checkedVals.length; i++) {
+          window.open(clusterPrefix + checkedVals[i] + onlineSuffix, '_blank').close();
+        }
+      });
+
+	  // Turns all machines to Offline State to stop the current job then closes them.
+	  // Those jobs are sent back to the queue. 
+	  // Then opens a tabs for each queue that was selected to clear it to avoid retaking the wrong job.
+      $("#batch-quit").on("click", function() {
+        $(".batch-action").attr("disabled", true);
+        setTimeout(function() {
+          $(".batch-action").attr("disabled", false);
+        }, 2000);
+        
+        var checkedPods = [];
+        var checkedVals = $('.bot-checkbox:checked').map(function() {
+          checkedPods.push($(this).attr("pod"));
+          return $(this).attr("bot-id");
+        }).get();
+
+        //console.log(checkedVals);
+        for (var i = 0; i < checkedVals.length; i++) {
+          window.open(clusterPrefix + checkedVals[i] + offlineSuffix, '_blank').close();
+        }
+        setTimeout(function() {
+          // Sort out and remove duplicate pod values.
+          var uniquePods = []
+          $.each(checkedPods, function(i, el) {
+            if ($.inArray(el, uniquePods) === -1) uniquePods.push(el);
+          });
+          // Loop and open Empty Queue page.
+          for (var i = 0; i < uniquePods.length; i++) {
+            for (var j = 0; j < queues.length; j++) {
+              if (queues[j].name == uniquePods[i]) {
+                window.open(queuePrefix + queues[j].id + "/empty", "_blank");
+              }
+            }
+          }
+        }, 1000);
+      });
+
+	  // Open tabs to each queue to clear them.
+      $("#batch-clear").on("click", function() {
+        $(".batch-action").attr("disabled", true);
+        setTimeout(function() {
+          $(".batch-action").attr("disabled", false);
+        }, 2000);
+        var checkedPods = [];
+        var checkedVals = $('.bot-checkbox:checked').map(function() {
+          checkedPods.push($(this).attr("pod"));
+          return $(this).attr("bot-id");
+        }).get();
+
+        setTimeout(function() {
+          // Sort out and remove duplicate pod values.
+          var uniquePods = []
+          $.each(checkedPods, function(i, el) {
+            if ($.inArray(el, uniquePods) === -1) {
+              uniquePods.push(el);
+            }
+          });
+          // Loop and open Empty Queue page.
+          for (var i = 0; i < uniquePods.length; i++) {
+            for (var j = 0; j < queues.length; j++) {
+              if (queues[j].name == uniquePods[i]) {
+                window.open(queuePrefix + queues[j].id + "/empty", "_blank");
+              }
+            }
+          }
+        }, 100);
+      });
+
+    });
+    
+  </script>
+</body>
+
+</html>
